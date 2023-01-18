@@ -9,7 +9,7 @@
 #######################################
 backend_mysql_create() {
   print_banner
-  printf "${WHITE} 💻 Criando banco de dados...${GRAY_LIGHT}"
+  printf "${WHITE} 💻 Criando banco de dados na porta 3307...${GRAY_LIGHT}"
   printf "\n\n"
 
   sleep 2
@@ -22,7 +22,7 @@ backend_mysql_create() {
                 -e MYSQL_USER=${db_user} \
                 -e MYSQL_PASSWORD=${db_pass} \
              --restart always \
-                -p 3306:3306 \
+                -p 3307:3307 \
                 -d mariadb:latest \
              --character-set-server=utf8mb4 \
              --collation-server=utf8mb4_bin
@@ -199,46 +199,6 @@ backend_start_pm2() {
   sudo su - deploy <<EOF
   cd /home/deploy/whaticket/backend
   pm2 start dist/server.js --name whaticket-backend
-EOF
-
-  sleep 2
-}
-
-#######################################
-# updates frontend code
-# Arguments:
-#   None
-#######################################
-backend_nginx_setup() {
-  print_banner
-  printf "${WHITE} 💻 Configurando nginx (backend)...${GRAY_LIGHT}"
-  printf "\n\n"
-
-  sleep 2
-
-  backend_hostname=$(echo "${backend_url/https:\/\/}")
-
-sudo su - root << EOF
-
-cat > /etc/nginx/sites-available/whaticket-backend << 'END'
-server {
-  server_name $backend_hostname;
-
-  location / {
-    proxy_pass http://127.0.0.1:8080;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade \$http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-Proto \$scheme;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_cache_bypass \$http_upgrade;
-  }
-}
-END
-
-ln -s /etc/nginx/sites-available/whaticket-backend /etc/nginx/sites-enabled
 EOF
 
   sleep 2
